@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<!-- 
+    Dissable µTorrent ads. 
+    Autor: Ivan Simonov
+    https://github.com/isimonov/dissable-uTorrent-ads
+-->
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="shortcut icon"type="image/x-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwgAADsIBFShKgAAAABl0RVh0U29mdHdhcmUAcGFpbnQubmV0IDQuMC4yMfEgaZUAAAJXSURBVDhPfVNLaBNRFJ24UPCD7hTdunDjRsGN4KYWamemM7EmYhXrwn4s9YNU3Qihi4IiCC4UNyJSrc3YZJKYijWl7UIFNRGhpn5CVbRqaUKsySQxYzLXe19eImNrT7gkefecw53z7gj/gaMp0LRR8jm37fEqW+tHDq3i50uj4UHDCllX2yW/GseyJF0FLEvUlSJ+3xN1dTunLkSj1rgBRU+4aNES/Yop+ZQeD3iWcVkFLs21GpsvFxNRXXx+CfyJAPgSOv0vi371JJdWoOjNvUceHoW+ZxfgVrwf5IDTZhCaDgPBLJvQHjkGkl8x5KC8mYkpIHe4JWOYRo3U9qjTZnBi/DRYlsX6I58i/Fy5xgzwRx0djH+ZYASC9m7IZiDrTvgw/5H1smYWWoYPYx7qZ5Q7BDGgthHp/GMPWPghpPIpaA7tt5n0T91hPcLAm0HAm8nv1lxraYIOIuwNuSFdSHMKwNVX120GlE8V+d8F6Jk4l1d0ZZ0g+5z1VdLdt15OAaBMOiJdNQMKlyasTmkUjbQA+Ai4cWtwnCyROke7oVQuMQIhU8ywccPTw1CyShBPTcGNyZswl0/CN2N2kIVIwAXqIwO6vvc/Elxux0x2BrpGj7Np1MC+XGuodQuXC2wKzGKSmpejV7gEQE8EWbjdY6fAGXQxMU5bxjrLpX8hesVN2IgdxCvKmTlmMP/rJ7jvH6jlgP2i6FN6F6xyFVJIWomPcyY6G/2KWZRpeW5PDdBLVcAak4fknUhzVNhLQHutLX/6/cWOZDZZF5uL7cK1Xc9b/0AQ/gBGbBWxTOTIsAAAAABJRU5ErkJggg==">
+        <title>Dissable µTorrent ads</title>
+    </head>
+    <body>
+        <div class="parent">
+            <div class="block">
+                <h1>Dissable µTorrent ads</h1>
+                <label for="port">Port number:</label>
+                <input type="number" id="port" placeholder="0-65536" value="" min="1" max="65535" title="1-65535">
+                <b title="See incoming connection port in µTorrent preferences: Option -> Preferences -> Port..." style="cursor:help">(?)</b>
+                <button id="actionButton" ng-click="Pair()" >Configure µTorrent!</button>
+                <div id="result"><i>Set port number and press Configure µTorrent. <a href="https://github.com/isimonov/dissable-uTorrent-ads">GitHub</a>.</i></div>
+            </div>
+        </div>
+
+        <style>
+            body {
+                color: #444;
+            }
+            h1 {
+                margin: 0 -30px 10px -30px;
+                border-bottom: 1px #ccc solid;
+                padding: 0 0 5px 0;
+                font-weight: normal;
+                
+            }
+            label {
+                font-size:20px; 
+
+            }
+            #port {
+                width:200px;
+                margin: 0 10px 10px 10px;
+                padding: 10px;
+            }
+            #actionButton {
+                font-size:50px; 
+                display:block; 
+                color:green;
+                padding: 10px;
+                width:100%;
+                margin-bottom: 10px;
+            }
+            #result {
+                height:20px;
+                color: #777;
+            }
+            #result a {
+                color: #555;
+            }
+            .parent {
+                width: 100%;
+                height: 100%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                display: flex;
+                align-items: center;
+                align-content: center; 
+                justify-content: center; 
+                overflow: auto;  
+            }
+            .block {
+                text-align: center;
+                border: 1px solid #888;
+                padding: 15px 30px;
+                border-radius: 5px;
+                background: rgb(245, 245, 245)
+            }
+        </style>
+
+        <script>
+            /*
+             *  Configuration parameters
+             */
+            const uTorrentValues = {
+                'gui.pro_installed': true,
+                'offers.left_rail_offer_enabled': false,
+                'offers.sponsored_torrent_offer_enabled': false,
+                'show_bundles_tab': false,
+                'offers.featured_content_badge_enabled': false,
+                'gui.show_plus_upsell_nodes': false,
+                'gui.show_gate_notify': false,
+                'gui.show_plus_upsell': false,
+                'gui.show_plus_av_upsell': false,
+                'offers.content_offer_autoexec': false,
+                'offers.featured_content_notifications_enabled': false,
+                'offers.featured_content_rss_enabled': false,
+                'offers.upgrade_panel': false,
+                'offers.upgrade_toolbar': false,
+                'gui.show_plus_conv_upsell': false,
+                'offers.content_offer_url': '',
+                'bt.enable_pulse': false,
+                'distributed_share.enable': false,
+                'gui.show_notorrents_node': false,
+                'sponsored_torrent_offer_enabled': false,
+                'left_rail_offer': false
+            };
+        </script>
+
+        <script>
+            /*
+             * Async jsonp library
+             * https://github.com/camsong/fetch-jsonp
+             */
+
+            const defaultOptions = {
+                timeout: 30000,
+                jsonpCallback: 'callback',
+                jsonpCallbackFunction: null,
+            };
+
+            function generateCallbackFunction() {
+                return `jsonp_${Date.now()}_${Math.ceil(Math.random() * 100000)}`;
+            }
+
+            function clearFunction(functionName) {
+                // IE8 throws an exception when you try to delete a property on window
+                // http://stackoverflow.com/a/1824228/751089
+                try {
+                    delete window[functionName];
+                } catch (e) {
+                    window[functionName] = undefined;
+                }
+            }
+
+            function removeScript(scriptId) {
+                const script = document.getElementById(scriptId);
+                if (script) {
+                    document.getElementsByTagName('head')[0].removeChild(script);
+                }
+            }
+
+            function fetchJsonp(_url, options = {}) {
+            // to avoid param reassign
+            let url = _url;
+            const timeout = options.timeout || defaultOptions.timeout;
+            const jsonpCallback = options.jsonpCallback || defaultOptions.jsonpCallback;
+
+            let timeoutId;
+
+            return new Promise((resolve, reject) => {
+                const callbackFunction = options.jsonpCallbackFunction || generateCallbackFunction();
+                const scriptId = `${jsonpCallback}_${callbackFunction}`;
+
+                window[callbackFunction] = (response) => {
+                    resolve({
+                        ok: true,
+                        // keep consistent with fetch API
+                        json: () => Promise.resolve(response),
+                    });
+
+                    if (timeoutId) clearTimeout(timeoutId);
+
+                    removeScript(scriptId);
+
+                    clearFunction(callbackFunction);
+                };
+
+                // Check if the user set their own params, and if not add a ? to start a list of params
+                url += (url.indexOf('?') === -1) ? '?' : '&';
+
+                const jsonpScript = document.createElement('script');
+                jsonpScript.setAttribute('src', `${url}${jsonpCallback}=${callbackFunction}`);
+                if (options.charset) {
+                    jsonpScript.setAttribute('charset', options.charset);
+                }
+                jsonpScript.id = scriptId;
+                document.getElementsByTagName('head')[0].appendChild(jsonpScript);
+
+                timeoutId = setTimeout(() => {
+                    reject(new Error(`JSONP request to ${_url} timed out`));
+
+                    clearFunction(callbackFunction);
+                    removeScript(scriptId);
+                    window[callbackFunction] = () => {
+                        clearFunction(callbackFunction);
+                    };
+                }, timeout);
+
+                // Caught if got 404/500
+                jsonpScript.onerror = () => {
+                    reject(new Error(`JSONP request to ${_url} failed`));
+
+                    clearFunction(callbackFunction);
+                    removeScript(scriptId);
+                    if (timeoutId) clearTimeout(timeoutId);
+                };
+            });
+            }
+        </script>
+
+        <script>
+            /*
+             * Main script setting µTorrent parameters
+             */
+            
+            function encodeData(data) {
+                return Object.keys(data).map(function(key) {
+                    return [key, data[key]].map(encodeURIComponent).join("=");
+                }).join("&");
+            }
+
+            function message(text, color) {
+                if (color === 'red') console.error(text);
+                document.getElementById('result').innerText = text;
+                document.getElementById('result').style.color = color;
+            }
+
+            function requestErrorHandler() {
+                message('Some error! See developer console.', 'red');
+            }
+
+            function configure() {
+                const port = document.getElementById('port').value;
+
+                if (port === '') {
+                    message('Set port number!', 'red');
+                    return;
+                }
+                if (!(!isNaN(port) && port >= 1 && port <= 65536)) {
+                    message('Port error! Change port!', 'red');
+                    return;
+                }
+
+                const baseUrl = 'http://localhost:' + port;
+                message('Connecting...', '#777');
+
+                fetchJsonp(baseUrl + '/gui/pingimg')
+                    .then(() => {
+                        message('Approve access to µTorrent!', 'blue');
+
+                        fetchJsonp(baseUrl + '/gui/pair/?' + encodeData({
+                            name: 'configureuTorrent'
+                        }))
+                            .then(response => response.json())
+                            .then(json => {
+                                console.log('Pairing key: ' + json.pairing_key);
+                                const pairing_key = json.pairing_key;
+
+                                fetchJsonp(baseUrl + '/btapp/?' + encodeData({
+                                    pairing: pairing_key,
+                                    type: 'state',
+                                    queries: '[[btapp]]'
+                                }))
+                                    .then(response => response.json())
+                                    .then(json => {
+                                        console.log('Session: ' + json.session);
+                                        const session = json.session;
+                                        const promises = [];
+
+                                        for (key in uTorrentValues) {
+                                            (k => {
+                                                promises.push(
+                                                    fetchJsonp(baseUrl + '/btapp/?' + encodeData({
+                                                        pairing: pairing_key,
+                                                        session: session,
+                                                        type: 'function',
+                                                        path: '["btapp","settings","set"]',
+                                                        args: '["'+ key +'", '+ uTorrentValues[key] +']'
+                                                    }))
+                                                        .then(response => response.json())
+                                                        .then(json => {
+                                                            console.log(k + ': ' + uTorrentValues[k] + ' => ' + json.btapp.settings.set);
+                                                        })
+                                                );
+                                            })(key)
+                                        }
+
+                                        Promise.all(promises).then(() => {
+                                            message('Success! Restart µTorrent!', 'green');
+                                        }, requestErrorHandler);
+                                    }, requestErrorHandler);
+                            }, requestErrorHandler);
+                    }, () => {
+                        message('Connecting error!', 'red');
+                    });
+            }
+
+            document.getElementById('actionButton').addEventListener('click', configure);
+            document.getElementById('port').addEventListener('keydown', () => event.key === "Enter" ? configure() : null);
+        </script>
+    </body>
+</html>
