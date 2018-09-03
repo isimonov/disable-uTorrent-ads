@@ -233,57 +233,50 @@
                 }
 
                 const baseUrl = 'http://localhost:' + port;
-                message('Connecting...', '#777');
+                message('Approve access to µTorrent!', 'blue');
 
-                fetchJsonp(baseUrl + '/gui/pingimg')
-                    .then(() => {
-                        message('Approve access to µTorrent!', 'blue');
+                fetchJsonp(baseUrl + '/gui/pair/?' + encodeData({
+                    name: 'configureuTorrent'
+                }))
+                    .then(response => response.json())
+                    .then(json => {
+                        console.log('Pairing key: ' + json.pairing_key);
+                        const pairing_key = json.pairing_key;
 
-                        fetchJsonp(baseUrl + '/gui/pair/?' + encodeData({
-                            name: 'configureuTorrent'
+                        fetchJsonp(baseUrl + '/btapp/?' + encodeData({
+                            pairing: pairing_key,
+                            type: 'state',
+                            queries: '[[btapp]]'
                         }))
                             .then(response => response.json())
                             .then(json => {
-                                console.log('Pairing key: ' + json.pairing_key);
-                                const pairing_key = json.pairing_key;
+                                console.log('Session: ' + json.session);
+                                const session = json.session;
+                                const promises = [];
 
-                                fetchJsonp(baseUrl + '/btapp/?' + encodeData({
-                                    pairing: pairing_key,
-                                    type: 'state',
-                                    queries: '[[btapp]]'
-                                }))
-                                    .then(response => response.json())
-                                    .then(json => {
-                                        console.log('Session: ' + json.session);
-                                        const session = json.session;
-                                        const promises = [];
+                                for (key in uTorrentValues) {
+                                    (k => {
+                                        promises.push(
+                                            fetchJsonp(baseUrl + '/btapp/?' + encodeData({
+                                                pairing: pairing_key,
+                                                session: session,
+                                                type: 'function',
+                                                path: '["btapp","settings","set"]',
+                                                args: '["'+ key +'", '+ uTorrentValues[key] +']'
+                                            }))
+                                                .then(response => response.json())
+                                                .then(json => {
+                                                    console.log(k + ': ' + uTorrentValues[k] + ' => ' + json.btapp.settings.set);
+                                                })
+                                        );
+                                    })(key)
+                                }
 
-                                        for (key in uTorrentValues) {
-                                            (k => {
-                                                promises.push(
-                                                    fetchJsonp(baseUrl + '/btapp/?' + encodeData({
-                                                        pairing: pairing_key,
-                                                        session: session,
-                                                        type: 'function',
-                                                        path: '["btapp","settings","set"]',
-                                                        args: '["'+ key +'", '+ uTorrentValues[key] +']'
-                                                    }))
-                                                        .then(response => response.json())
-                                                        .then(json => {
-                                                            console.log(k + ': ' + uTorrentValues[k] + ' => ' + json.btapp.settings.set);
-                                                        })
-                                                );
-                                            })(key)
-                                        }
-
-                                        Promise.all(promises).then(() => {
-                                            message('Success! Restart µTorrent!', 'green');
-                                        }, requestErrorHandler);
-                                    }, requestErrorHandler);
+                                Promise.all(promises).then(() => {
+                                    message('Success! Restart µTorrent!', 'green');
+                                }, requestErrorHandler);
                             }, requestErrorHandler);
-                    }, () => {
-                        message('Connecting error!', 'red');
-                    });
+                    }, requestErrorHandler);
             }
 
             document.getElementById('actionButton').addEventListener('click', configure);
